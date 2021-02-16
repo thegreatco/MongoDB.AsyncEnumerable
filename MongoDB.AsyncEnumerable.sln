@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31005.135
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongoDB.AsyncEnumerable", "MongoDB.AsyncEnumerable\MongoDB.AsyncEnumerable.csproj", "{FD93CB22-F80F-4868-88E3-F446CB81C9A3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongoDB.AsyncEnumerable", "src\MongoDB.AsyncEnumerable\MongoDB.AsyncEnumerable.csproj", "{FD93CB22-F80F-4868-88E3-F446CB81C9A3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoDB.AsyncEnumerable.Tests", "MongoDB.AsyncEnumerable.Tests\MongoDB.AsyncEnumerable.Tests.csproj", "{47386212-1B34-4CD9-84B7-ED07B0231E22}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoDB.AsyncEnumerable.Tests", "test\MongoDB.AsyncEnumerable.Tests\MongoDB.AsyncEnumerable.Tests.csproj", "{47386212-1B34-4CD9-84B7-ED07B0231E22}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

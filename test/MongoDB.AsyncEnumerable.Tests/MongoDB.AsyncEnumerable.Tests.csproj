@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MongoDB.AsyncEnumerable\MongoDB.AsyncEnumerable.csproj" />
+    <ProjectReference Include="..\..\src\MongoDB.AsyncEnumerable\MongoDB.AsyncEnumerable.csproj" />
   </ItemGroup>
 
 </Project>
