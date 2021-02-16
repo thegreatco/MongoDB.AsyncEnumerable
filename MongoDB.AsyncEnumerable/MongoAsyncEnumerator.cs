@@ -14,7 +14,6 @@ namespace MongoDB.AsyncEnumerable
         private bool _disposed;
         private readonly ILogger _logger;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-        private IReadOnlyCollection<T> _objects;
         private readonly IAsyncCursor<T> _cursor;
         private IEnumerator<T> _enumerator;
         private bool _exhausted;
@@ -25,20 +24,12 @@ namespace MongoDB.AsyncEnumerable
             _logger = logger ?? NullLogger.Instance;
         }
 
-        public MongoAsyncEnumerator(IReadOnlyCollection<T> objects, ILogger logger)
-        {
-            _logger = logger;
-            _objects = objects;
-            _enumerator = objects.GetEnumerator();
-        }
-
         public async ValueTask DisposeAsync()
         {
             await _semaphore.WaitAsync().ConfigureAwait(false);
             try
             {
                 _cursor?.Dispose();
-                _objects = null;
                 _enumerator?.Dispose();
                 _disposed = true;
             }
@@ -54,38 +45,41 @@ namespace MongoDB.AsyncEnumerable
                 throw new ObjectDisposedException("Cannot iterate a disposed enumerator");
         }
 
-        private ValueTask<bool> InternalCollectionMoveNextAsync()
+        private async ValueTask<bool> InternalCursorMoveNextAsync()
         {
-            return new ValueTask<bool>(_enumerator.MoveNext());
-        }
-
-        private async ValueTask<bool> InternalCursorMoveNextAsync(Stopwatch sw)
-        {
-            if (_enumerator != null && _enumerator.MoveNext())
+            var sw = Stopwatch.StartNew();
+            try
             {
-                return true;
-            }
+                if (_enumerator != null && _enumerator.MoveNext())
+                {
+                    return true;
+                }
 
-            if (_cursor != null)
+                if (_cursor != null)
+                {
+                    if (await _cursor.MoveNextAsync().ConfigureAwait(false))
+                    {
+                        _logger?.LogTrace($"moveNext: {sw.ElapsedMilliseconds}");
+                        _enumerator = _cursor.Current.GetEnumerator();
+                        return _enumerator.MoveNext();
+                    }
+                    else
+                    {
+                        _logger?.LogTrace($"No documents found after moveNext: {sw.ElapsedMilliseconds}");
+                        _enumerator = null;
+                        _exhausted = true;
+                        return false;
+                    }
+                }
+
+                _enumerator = null;
+                _exhausted = true;
+                return false;
+            }
+            finally
             {
-                if (await _cursor.MoveNextAsync().ConfigureAwait(false))
-                {
-                    _logger?.LogTrace($"moveNext: {sw.ElapsedMilliseconds}");
-                    _enumerator = _cursor.Current.GetEnumerator();
-                    return _enumerator.MoveNext();
-                }
-                else
-                {
-                    _logger?.LogTrace($"No documents found after moveNext: {sw.ElapsedMilliseconds}");
-                    _enumerator = null;
-                    _exhausted = true;
-                    return false;
-                }
+                sw.Stop();
             }
-
-            _enumerator = null;
-            _exhausted = true;
-            return false;
         }
 
         public async ValueTask<bool> MoveNextAsync()
@@ -107,19 +101,8 @@ namespace MongoDB.AsyncEnumerable
                     return false;
                 }
 
-                if (_objects != null)
-                {
-                    _logger?.LogTrace("Checking internal collection.");
-                    return await InternalCollectionMoveNextAsync().ConfigureAwait(false);
-                }
-
-                if (_cursor != null)
-                {
-                    _logger?.LogTrace("Checking remote cursor.");
-                    return await InternalCursorMoveNextAsync(sw).ConfigureAwait(false);
-                }
-
-                return false;
+                _logger?.LogTrace("Checking remote cursor.");
+                return await InternalCursorMoveNextAsync().ConfigureAwait(false);
             }
             finally
             {
